@@ -11,6 +11,7 @@ import json
 @dataclass
 class Submission:
     """Represents a performance review submission."""
+
     id: str
     content: str
     parent_id: Optional[str] = None  # ID of submission this was optimized from
@@ -25,7 +26,7 @@ class Submission:
             "parent_id": self.parent_id,
             "agent_name": self.agent_name,
             "created_at": self.created_at.isoformat(),
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -37,20 +38,21 @@ class Submission:
 @dataclass
 class ELORating:
     """ELO rating for a submission with confidence tracking."""
+
     submission_id: str
     rating: float = 1500.0
     matches_played: int = 0
     wins: int = 0
     losses: int = 0
     k_factor: float = 32.0
-    
+
     @property
     def win_rate(self) -> float:
         """Calculate win rate."""
         if self.matches_played == 0:
             return 0.0
         return self.wins / self.matches_played
-    
+
     @property
     def confidence_interval(self) -> float:
         """Rough confidence interval based on matches played."""
@@ -70,7 +72,7 @@ class ELORating:
             "matches_played": self.matches_played,
             "wins": self.wins,
             "losses": self.losses,
-            "k_factor": self.k_factor
+            "k_factor": self.k_factor,
         }
 
     @classmethod
@@ -81,6 +83,7 @@ class ELORating:
 @dataclass
 class Match:
     """Represents a pairwise comparison match."""
+
     id: str
     submission_a_id: str
     submission_b_id: str
@@ -97,7 +100,7 @@ class Match:
             "winner_id": self.winner_id,
             "judge_reasoning": self.judge_reasoning,
             "created_at": self.created_at.isoformat(),
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -109,6 +112,7 @@ class Match:
 @dataclass
 class Tournament:
     """Represents a tournament with all submissions, ratings, and matches."""
+
     id: str
     name: str
     rubric: str
@@ -137,7 +141,7 @@ class Tournament:
             rating = self.ratings.get(submission.id)
             if rating:
                 leaderboard.append((submission, rating))
-        
+
         return sorted(leaderboard, key=lambda x: x[1].rating, reverse=True)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -150,8 +154,10 @@ class Tournament:
             "ratings": {k: v.to_dict() for k, v in self.ratings.items()},
             "matches": [m.to_dict() for m in self.matches],
             "created_at": self.created_at.isoformat(),
-            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
-            "metadata": self.metadata
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
+            "metadata": self.metadata,
         }
 
     @classmethod
@@ -162,24 +168,30 @@ class Tournament:
             rubric=data["rubric"],
             original_submission=Submission.from_dict(data["original_submission"]),
             created_at=datetime.fromisoformat(data["created_at"]),
-            completed_at=datetime.fromisoformat(data["completed_at"]) if data["completed_at"] else None,
-            metadata=data["metadata"]
+            completed_at=(
+                datetime.fromisoformat(data["completed_at"])
+                if data["completed_at"]
+                else None
+            ),
+            metadata=data["metadata"],
         )
-        
+
         tournament.submissions = [Submission.from_dict(s) for s in data["submissions"]]
-        tournament.ratings = {k: ELORating.from_dict(v) for k, v in data["ratings"].items()}
+        tournament.ratings = {
+            k: ELORating.from_dict(v) for k, v in data["ratings"].items()
+        }
         tournament.matches = [Match.from_dict(m) for m in data["matches"]]
-        
+
         return tournament
 
     def save_to_file(self, filepath: str) -> None:
         """Save tournament to JSON file."""
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(self.to_dict(), f, indent=2)
 
     @classmethod
     def load_from_file(cls, filepath: str) -> "Tournament":
         """Load tournament from JSON file."""
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             data = json.load(f)
         return cls.from_dict(data)
