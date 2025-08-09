@@ -19,5 +19,9 @@ EXPOSE 8501
 # Health check
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
+# Copy and set up entrypoint
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Run the Streamlit app
-CMD streamlit run streamlit_app.py --server.port=${PORT:-8501} --server.address=0.0.0.0
+CMD ["/app/entrypoint.sh"]
