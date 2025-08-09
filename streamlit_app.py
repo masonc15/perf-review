@@ -394,13 +394,14 @@ def main():
     
     st.markdown(
         """
-    ⚠️ **Research Demo**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than being a traditional AI optimizer tool.
+    ⚠️ **Research Demo**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than providing career advice.
 
     This demonstrates what kinds of wording and presentation styles AI judges prefer when evaluating performance reviews and resumes.
     
     * Data you provide is processed by OpenAI models but not stored by this demo
     * The system uses competitive ELO tournaments to identify optimization strategies that AI judges favor
     * This explores AI bias patterns rather than providing definitive career advice
+    * The demo takes 5-10 minutes to run with defaults and uses a variety of strategies and models including GPT-5
     * [View the code on GitHub](https://github.com/sshh12/perf-review)
     """
     )
