@@ -1,0 +1,9 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "streamlit run streamlit_app.py --server.port=$PORT --server.address=0.0.0.0"
+
+[env]
+# Railway will provide PORT automatically
+# Add your OpenAI API key as an environment variable in Railway dashboard

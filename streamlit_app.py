@@ -11,6 +11,8 @@ import random
 import time
 from typing import Dict, Any, List
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 # Add project root to path for imports
 import sys
@@ -164,6 +166,99 @@ def create_leaderboard_df(tournament: Tournament) -> pd.DataFrame:
     return pd.DataFrame(data)
 
 
+def create_confidence_intervals_chart(tournament: Tournament):
+    """Create a confidence intervals chart showing ELO ratings with error bars."""
+    leaderboard = tournament.get_leaderboard()
+    
+    # Prepare data for the chart
+    models = []
+    ratings = []
+    lower_bounds = []
+    upper_bounds = []
+    matches_counts = []
+    
+    for submission, rating in leaderboard:
+        agent_name = submission.agent_name or "Original"
+        model_name = submission.metadata.get("optimizer_model", "")
+        
+        if model_name and agent_name != "Original":
+            display_name = f"{agent_name}_{model_name.replace('-', '_')}"
+        else:
+            display_name = agent_name
+            
+        models.append(display_name)
+        ratings.append(rating.rating)
+        
+        # Calculate confidence bounds
+        ci = rating.confidence_interval
+        lower_bounds.append(rating.rating - ci)
+        upper_bounds.append(rating.rating + ci)
+        matches_counts.append(rating.matches_played)
+    
+    # Sort by rating (descending)
+    sorted_data = sorted(zip(models, ratings, lower_bounds, upper_bounds, matches_counts), 
+                        key=lambda x: x[1], reverse=True)
+    models, ratings, lower_bounds, upper_bounds, matches_counts = zip(*sorted_data)
+    
+    # Create the plotly figure
+    fig = go.Figure()
+    
+    # Add error bars and points
+    fig.add_trace(go.Scatter(
+        x=list(range(len(models))),
+        y=ratings,
+        mode='markers',
+        marker=dict(size=8, color='#1f77b4'),
+        error_y=dict(
+            type='data',
+            array=[r - l for r, l in zip(ratings, lower_bounds)],
+            arrayminus=[u - r for u, r in zip(upper_bounds, ratings)],
+            visible=True,
+            color='#1f77b4',
+            thickness=2,
+            width=4
+        ),
+        name='ELO Rating',
+        hovertemplate='<b>%{text}</b><br>ELO Rating: %{y:.0f}<br>Matches: %{customdata}<extra></extra>',
+        text=models,
+        customdata=matches_counts
+    ))
+    
+    # Update layout to match the example style
+    fig.update_layout(
+        title={
+            'text': 'Confidence Intervals on Model Strength (via Bootstrapping)',
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 18, 'color': '#333'}
+        },
+        xaxis=dict(
+            title='Model',
+            tickangle=-45,
+            tickmode='array',
+            tickvals=list(range(len(models))),
+            ticktext=models,
+            showgrid=True,
+            gridcolor='lightgray',
+            gridwidth=1
+        ),
+        yaxis=dict(
+            title='ELO Rating',
+            showgrid=True,
+            gridcolor='lightgray',
+            gridwidth=1
+        ),
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        showlegend=False,
+        width=800,
+        height=500,
+        margin=dict(l=60, r=60, t=80, b=120)
+    )
+    
+    return fig
+
+
 def display_submission_details(submission: Submission):
     """Display detailed information about a submission."""
     agent_name = submission.agent_name or "Original"
@@ -296,6 +391,20 @@ def main():
     )
     
     st.title("🚀 AI Content Optimizer")
+    
+    st.markdown(
+        """
+    ⚠️ **Research Demo**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than being a traditional AI optimizer tool.
+
+    This demonstrates what kinds of wording and presentation styles AI judges prefer when evaluating performance reviews and resumes.
+    
+    * Data you provide is processed by OpenAI models but not stored by this demo
+    * The system uses competitive ELO tournaments to identify optimization strategies that AI judges favor
+    * This explores AI bias patterns rather than providing definitive career advice
+    * [View the code on GitHub](https://github.com/sshh12/perf-review)
+    """
+    )
+    
     st.write("Transform your professional content with AI-powered optimization strategies")
     
     # Check for OpenAI API key
@@ -521,7 +630,7 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
             total_steps = num_rounds * 2 + 2  # 2 steps per round (optimize + matches) + setup + final
             current_step = 0
             
-            status_text.text("🚀 Starting optimization tournament...")
+            status_text.text("🚀 Starting optimization tournament... (This typically takes 5-10 minutes - grab a coffee! ☕)")
             progress_bar.progress(40)
             
             # We need to implement our own tournament loop for granular updates
@@ -530,7 +639,7 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
                 progress = 40 + (current_step / total_steps) * 40  # Use 40-80% of progress bar
                 
                 # Optimization round
-                status_text.text(f"⚙️ Round {round_num}/{num_rounds}: Optimizing with {len(selected_agents)} agents...")
+                status_text.text(f"⚙️ Round {round_num}/{num_rounds}: Optimizing with {len(selected_agents)} agents... (~5 minutes per round)")
                 progress_bar.progress(int(progress))
                 
                 # Reset agent attempts for this round
@@ -542,14 +651,14 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
                     tournament,
                     optimizers,
                     config["tournament"]["max_attempts_per_agent"],
-                    10  # optimization_batch_size
+                    30  # optimization_batch_size
                 )
                 
                 current_step += 1
                 progress = 40 + (current_step / total_steps) * 40
                 
                 # Matches round
-                status_text.text(f"⚖️ Round {round_num}/{num_rounds}: Running {matches_per_round} matches...")
+                status_text.text(f"⚖️ Round {round_num}/{num_rounds}: Running {matches_per_round} matches... (~1-2 minutes)")
                 progress_bar.progress(int(progress))
                 
                 # Run tournament matches
@@ -557,7 +666,7 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
                     tournament,
                     num_matches=matches_per_round,
                     match_strategy="swiss",
-                    batch_size=10  # match_batch_size
+                    batch_size=30  # match_batch_size
                 )
                 
                 status_text.text(f"✅ Round {round_num} complete: {len(new_submissions)} new submissions, {len(new_matches)} matches")
@@ -566,7 +675,7 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
             # Final comprehensive match round
             current_step += 1
             progress = 40 + (current_step / total_steps) * 40
-            status_text.text("🏁 Running final comprehensive matches...")
+            status_text.text("🏁 Running final comprehensive matches... (~2-3 minutes)")
             progress_bar.progress(int(progress))
             time.sleep(0.3)
             
@@ -574,7 +683,7 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
                 tournament,
                 num_matches=50,
                 match_strategy="swiss",
-                batch_size=10
+                batch_size=30
             )
             
             tournament.completed_at = tournament.created_at
@@ -596,7 +705,7 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
                 
                 # Filter submissions (excluding original) with parallel processing
                 approved_submissions, verification_results = truth_guarded.filter_submissions(
-                    submissions_to_verify, background, rubric, batch_size=10
+                    submissions_to_verify, background, rubric, batch_size=30
                 )
                 
                 # Show verification results
@@ -618,6 +727,12 @@ def run_optimization_interface(mode: str, config: Dict[str, Any], num_rounds: in
             st.header("🏆 Leaderboard")
             leaderboard_df = create_leaderboard_df(completed_tournament)
             st.dataframe(leaderboard_df, use_container_width=True)
+            
+            # Add confidence intervals chart
+            if len(completed_tournament.submissions) > 1:
+                st.subheader("📊 Model Strength Confidence Intervals")
+                confidence_chart = create_confidence_intervals_chart(completed_tournament)
+                st.plotly_chart(confidence_chart, use_container_width=True)
             
             # Display winner details
             leaderboard = completed_tournament.get_leaderboard()
