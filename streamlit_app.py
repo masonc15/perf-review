@@ -390,11 +390,11 @@ def main():
         layout="wide"
     )
     
-    st.title("🚀 AI Content Optimizer")
+    st.title("AI Career Content Optimizer")
     
     st.markdown(
         """
-    ⚠️ **Research Demo**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than providing career advice.
+    ⚠️ **Proof of Concept**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than providing career advice.
 
     This demonstrates what kinds of wording and presentation styles AI judges prefer when evaluating performance reviews and resumes.
     
