@@ -313,7 +313,14 @@ def main():
                 reasoning=config["judge"].get("reasoning"),
             )
 
-        elo_system = ELOSystem()
+        # Create ELO system with optimized hyperparameters for faster convergence
+        elo_system = ELOSystem(
+            default_k_factor=40.0,  # Slightly more aggressive
+            min_rating=800.0,  # Prevent extreme lows
+            max_rating=2800.0,  # Prevent extreme highs
+            starting_rating=1500.0,  # Standard starting point
+            use_stochastic_start=True,  # Small random variations to break ties
+        )
         arena = Arena(judge, elo_system)
 
         # Create optimizer agents from config list

@@ -3,6 +3,7 @@ ELO rating system for performance review tournaments.
 """
 
 import math
+import random
 from typing import Tuple
 from .models import ELORating
 
@@ -10,14 +11,29 @@ from .models import ELORating
 class ELOSystem:
     """Handles ELO rating calculations and updates."""
 
-    def __init__(self, default_k_factor: float = 32.0):
+    def __init__(
+        self,
+        default_k_factor: float = 32.0,
+        min_rating: float = 800.0,
+        max_rating: float = 2800.0,
+        starting_rating: float = 1500.0,
+        use_stochastic_start: bool = True,
+    ):
         """
         Initialize ELO system.
 
         Args:
             default_k_factor: Default K-factor for rating changes
+            min_rating: Minimum allowed rating (prevents extreme negatives)
+            max_rating: Maximum allowed rating (prevents extreme positives)
+            starting_rating: Base starting rating for new players
+            use_stochastic_start: Add small random variation to starting ratings
         """
         self.default_k_factor = default_k_factor
+        self.min_rating = min_rating
+        self.max_rating = max_rating
+        self.starting_rating = starting_rating
+        self.use_stochastic_start = use_stochastic_start
 
     def expected_score(self, rating_a: float, rating_b: float) -> float:
         """
@@ -62,6 +78,10 @@ class ELOSystem:
         new_rating_a = rating_a.rating + k_a * (actual_a - expected_a)
         new_rating_b = rating_b.rating + k_b * (actual_b - expected_b)
 
+        # Apply rating bounds
+        new_rating_a = max(self.min_rating, min(self.max_rating, new_rating_a))
+        new_rating_b = max(self.min_rating, min(self.max_rating, new_rating_b))
+
         # Update rating objects
         rating_a.rating = new_rating_a
         rating_a.matches_played += 1
@@ -81,8 +101,8 @@ class ELOSystem:
 
     def _get_k_factor(self, rating: ELORating) -> float:
         """
-        Get adaptive K-factor based on number of matches played.
-        New players have higher K-factor for faster adjustment.
+        Get adaptive K-factor based on matches played, current rating, and performance.
+        Uses more aggressive K-factors for faster convergence with fewer matches.
 
         Args:
             rating: ELO rating object
@@ -90,12 +110,50 @@ class ELOSystem:
         Returns:
             K-factor to use for this player
         """
-        if rating.matches_played < 10:
-            return 48.0  # High K-factor for new players
+        # Base K-factor from matches played (more aggressive than standard)
+        if rating.matches_played < 5:
+            base_k = 64.0  # Very high for initial rapid adjustment
+        elif rating.matches_played < 12:
+            base_k = 48.0  # High for new players
         elif rating.matches_played < 25:
-            return 32.0  # Medium K-factor
+            base_k = 32.0  # Medium
         else:
-            return 16.0  # Low K-factor for experienced players
+            base_k = 24.0  # Higher floor than standard (16.0)
+
+        # Rating-based modifier: extreme ratings get lower K to prevent wild swings
+        if rating.rating < 1200 or rating.rating > 1800:
+            base_k *= 0.8  # Reduce volatility at extremes
+
+        # Performance-based modifier: consistent performers get slightly lower K
+        if rating.matches_played >= 8:
+            win_rate = rating.win_rate
+            if 0.4 <= win_rate <= 0.6:  # Very balanced performance
+                base_k *= 0.9  # Slight reduction for stable players
+
+        return base_k
+
+    def create_initial_rating(self, submission_id: str) -> ELORating:
+        """
+        Create initial ELO rating with optional stochastic variation.
+
+        Args:
+            submission_id: Unique ID for the submission
+
+        Returns:
+            New ELORating with initial rating
+        """
+        base_rating = self.starting_rating
+
+        if self.use_stochastic_start:
+            # Add small random variation (±25 points) to prevent identical starts
+            variation = random.uniform(-25, 25)
+            initial_rating = base_rating + variation
+            # Ensure within bounds
+            initial_rating = max(self.min_rating, min(self.max_rating, initial_rating))
+        else:
+            initial_rating = base_rating
+
+        return ELORating(submission_id=submission_id, rating=initial_rating)
 
     def rating_difference_threshold(self, rating_a: float, rating_b: float) -> str:
         """

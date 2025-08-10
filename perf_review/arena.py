@@ -48,8 +48,9 @@ class Arena:
             original_submission=original_submission,
         )
 
-        # Add original submission to tournament
-        tournament.add_submission(original_submission)
+        # Add original submission to tournament with initial ELO rating
+        original_rating = self.elo_system.create_initial_rating(original_submission.id)
+        tournament.add_submission(original_submission, original_rating)
 
         return tournament
 
@@ -107,9 +108,11 @@ class Arena:
                     submission = future.result()
                     if submission:
                         new_submissions.append(submission)
-                        tournament.add_submission(
-                            submission
-                        )  # This creates the rating too
+                        # Create ELO rating for new submission
+                        new_rating = self.elo_system.create_initial_rating(
+                            submission.id
+                        )
+                        tournament.add_submission(submission, new_rating)
                         optimizer.attempts_made += 1
                         print(
                             f"✅ {optimizer.strategy.name}: Created optimized submission"
@@ -182,9 +185,13 @@ class Arena:
         # Ensure all submissions involved in matches have ratings
         for submission_a, submission_b in pairs:
             if submission_a.id not in tournament.ratings:
-                tournament.ratings[submission_a.id] = ELORating(submission_a.id)
+                tournament.ratings[submission_a.id] = (
+                    self.elo_system.create_initial_rating(submission_a.id)
+                )
             if submission_b.id not in tournament.ratings:
-                tournament.ratings[submission_b.id] = ELORating(submission_b.id)
+                tournament.ratings[submission_b.id] = (
+                    self.elo_system.create_initial_rating(submission_b.id)
+                )
 
         # Run matches in parallel batches
         with ThreadPoolExecutor(max_workers=batch_size) as executor:
@@ -333,7 +340,9 @@ class Arena:
         # Ensure all submissions have ratings before sorting
         for submission in tournament.submissions:
             if submission.id not in tournament.ratings:
-                tournament.ratings[submission.id] = ELORating(submission.id)
+                tournament.ratings[submission.id] = (
+                    self.elo_system.create_initial_rating(submission.id)
+                )
 
         sorted_submissions = sorted(
             tournament.submissions,

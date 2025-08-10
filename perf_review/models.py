@@ -124,25 +124,40 @@ class Tournament:
     completed_at: Optional[datetime] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def add_submission(self, submission: Submission) -> None:
-        """Add a new submission and initialize its ELO rating."""
+    def add_submission(
+        self, submission: Submission, elo_rating: ELORating = None
+    ) -> None:
+        """Add a new submission with optional pre-configured ELO rating."""
         self.submissions.append(submission)
-        if submission.id not in self.ratings:
-            self.ratings[submission.id] = ELORating(submission_id=submission.id)
+        if elo_rating and submission.id not in self.ratings:
+            self.ratings[submission.id] = elo_rating
 
     def add_match(self, match: Match) -> None:
         """Add a match result."""
         self.matches.append(match)
 
     def get_leaderboard(self) -> List[tuple]:
-        """Get submissions sorted by ELO rating."""
+        """Get submissions sorted by ELO rating with tie-breaking."""
         leaderboard = []
         for submission in self.submissions:
             rating = self.ratings.get(submission.id)
             if rating:
                 leaderboard.append((submission, rating))
 
-        return sorted(leaderboard, key=lambda x: x[1].rating, reverse=True)
+        # Sort by multiple criteria to break ties consistently:
+        # 1. ELO rating (descending)
+        # 2. Win rate (descending)
+        # 3. Matches played (descending)
+        # 4. Agent name (ascending, for consistent ordering)
+        return sorted(
+            leaderboard,
+            key=lambda x: (
+                -x[1].rating,  # Primary: ELO rating (negative for descending)
+                -x[1].win_rate,  # Secondary: Win rate
+                -x[1].matches_played,  # Tertiary: Experience (matches played)
+                x[0].agent_name or "zzz_original",  # Final: Consistent name ordering
+            ),
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
