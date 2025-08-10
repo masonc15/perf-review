@@ -632,9 +632,9 @@ def main():
 
     st.markdown(
         """
-    ⚠️ **Proof of Concept**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than providing career advice.
+    **What if AI models were judging your performance review or resume?** This system reveals the hidden biases and preferences of AI judges by running competitive tournaments between different writing styles and optimization strategies.
 
-    This demonstrates what kinds of wording and presentation styles AI judges prefer when evaluating performance reviews and resumes.
+    ⚠️ **Research Tool**: This explores how AI models evaluate professional content, not career advice. It shows which specific wording, metrics, and presentation styles make AI judges rank one version higher than another.
     
     * Data you provide is processed by OpenAI models but not stored by this demo
     * The system uses competitive ELO tournaments to identify optimization strategies that AI judges favor
