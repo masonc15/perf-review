@@ -10,6 +10,9 @@
 * The demo takes 5-15 minutes to run depending on settings and uses a variety of strategies and models including GPT-5
 * [View the code on GitHub](https://github.com/sshh12/perf-review)
 
+<img width="1624" height="614" alt="Screenshot 2025-08-09 at 5 15 28 PM" src="https://github.com/user-attachments/assets/67d94640-4dc4-49a9-966f-a733f3a558c5" />
+
+
 ## Features
 
 - **Multi-Strategy Optimization**: 6 different AI agents with specialized optimization strategies
