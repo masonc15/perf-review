@@ -1,6 +1,14 @@
-# 🚀 AI Performance Review Optimizer
+# 🚀 AI Judge Preference Demo
 
-Transform your performance reviews with AI-powered optimization strategies using competitive ELO tournaments.
+⚠️ **Proof of Concept**: This is an experimental system exploring LLM-as-judge preferences and biases in professional content evaluation. The system optimizes content for AI evaluation rather than providing career advice.
+
+This demonstrates what kinds of wording and presentation styles AI judges prefer when evaluating performance reviews and resumes.
+
+* Data you provide is processed by OpenAI models but not stored by this demo
+* The system uses competitive ELO tournaments to identify optimization strategies that AI judges favor
+* This explores AI bias patterns rather than providing definitive career advice
+* The demo takes 5-15 minutes to run depending on settings and uses a variety of strategies and models including GPT-5
+* [View the code on GitHub](https://github.com/sshh12/perf-review)
 
 ## Features
 
@@ -11,80 +19,56 @@ Transform your performance reviews with AI-powered optimization strategies using
 - **Multi-Judge System**: Optional consensus-based judging with multiple models
 - **Configurable Strategies**: Fully customizable agent strategies and focus areas
 
-## Quick Start
+## Usage
 
-### 1. Setup Environment
+### Prerequisites
+
+- Python 3.8+ 
+- OpenAI API key (set as `OPENAI_API_KEY` environment variable)
+
+### Installation & Setup
 
 ```bash
-# Set your OpenAI API key
-export OPENAI_API_KEY="your-api-key-here"
+# Clone the repository
+git clone https://github.com/sshh12/perf-review
+cd perf-review
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Set up environment (includes OpenAI API key)
+source env.sh
 ```
 
-### 2. Run Streamlit App
+### Running the Web Interface
 
 ```bash
-streamlit run streamlit_app.py
+# Start the Streamlit app
+source env.sh && streamlit run streamlit_app.py
 ```
 
 Then open your browser to the provided URL (typically http://localhost:8501)
 
-### 3. Run Command Line Version
+The web interface provides two modes:
+- **📝 Performance Review Mode**: Optimize performance reviews against career ladders
+- **💼 Resume/Recruiting Mode**: Optimize resumes against job requirements
+
+### Running Command Line Version
 
 ```bash
-# Create sample config
-python main.py --create-sample-config
+# Set up environment and run
+source env.sh && PYTHONPATH=. python main.py --rounds 2 --output results.json
 
-# Run tournament
-python main.py --rounds 2 --output results.json
+# Create sample configuration
+source env.sh && PYTHONPATH=. python main.py --create-sample-config
+
+# Format code (development)
+black .
 ```
 
 ## How It Works
 
-1. **Input**: Provide your original performance review, career ladder/rubric, and optional background data
-2. **Optimization**: AI agents create optimized versions using different strategies:
-   - **MetricsOptimizer**: Quantifies impact with specific numbers and data
-   - **LeadershipOptimizer**: Emphasizes mentoring and team influence  
-   - **StrategicOptimizer**: Frames work in business context and strategic value
-   - **GrowthOptimizer**: Highlights learning and adaptability
-   - **ClarityOptimizer**: Improves structure and professional presentation
-   - **ImpactOptimizer**: Focuses on customer and market impact
-3. **Tournament**: Optimized reviews compete in ELO-ranked matches judged by LLM
-4. **Results**: Get ranked leaderboard with detailed explanations and raw data
-
-## Configuration
-
-The system is highly configurable via JSON. Key settings:
-
-- **Tournament**: Rounds, matches per round, max attempts per agent
-- **Agents**: List of optimization strategies with models and focus areas  
-- **Judge**: Model selection and multi-judge consensus options
-- **Truth Agent**: Factual verification against ground truth data
-
-## Architecture
-
-- `perf_review/` - Core system modules
-  - `models.py` - Data structures and tournament state
-  - `optimizer.py` - AI optimization agents and strategies
-  - `judge.py` - LLM judges for pairwise comparisons  
-  - `truth_agent.py` - Factual verification system
-  - `arena.py` - Tournament orchestration and ELO system
-- `main.py` - Command line interface
-- `streamlit_app.py` - Web interface
-- `sample_config.json` - Example configuration
-
-## Example Results
-
-The system transforms vague reviews like:
-> "I worked on several projects including new features and bug fixes..."
-
-Into optimized versions like:
-> "Led delivery of authentication system (450 lines, 4-week project with 3-person team), resulting in 40% reduction in security incidents. Mentored 2 junior engineers on testing practices, completed 45 code reviews..."
-
-## Requirements
-
-- Python 3.8+
-- OpenAI API key
-- Dependencies in `requirements.txt`
+1. **Input**: Provide your original content, evaluation criteria, and optional background data
+2. **Optimization**: AI agents create optimized versions using different strategies and approaches
+3. **Tournament**: Optimized versions compete in ELO-ranked matches judged by multiple AI models
+4. **Results**: Get ranked leaderboard showing which optimization approaches AI judges prefer
